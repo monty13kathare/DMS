@@ -1,54 +1,35 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./components/Dashboard";
 import FileUpload from "./components/FileUpload";
 import FileSearch from "./components/FileSearch";
 import Admin from "./components/Admin";
+import Layout from "./components/Layout";
 
 const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
+        {/* Public Route */}
         <Route path="/login" element={<Login />} />
 
-        {/* Protected Routes */}
+        {/* Protected Routes with Layout */}
         <Route
-          path="/"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Layout />
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/upload"
-          element={
-            <ProtectedRoute>
-              <FileUpload />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/search"
-          element={
-            <ProtectedRoute>
-              <FileSearch />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <Admin />
-            </ProtectedRoute>
-          }
-        />
+        >
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/upload" element={<FileUpload />} />
+          <Route path="/search" element={<FileSearch />} />
+          <Route path="/admin" element={<Admin />} />
+        </Route>
 
-        {/* Fallback Route */}
-        <Route path="*" element={<Login />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
