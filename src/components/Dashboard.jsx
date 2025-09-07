@@ -1,10 +1,31 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
     const [username, setUsername] = useState("");
     const [documents, setDocuments] = useState([]);
 
+    useEffect(() => {
+        try {
+            //Load logged-in user
+            const users = JSON.parse(localStorage.getItem("users")) || [];
+            const loggedInUser = localStorage.getItem("authUser");
+
+            if (loggedInUser) {
+                setUsername(loggedInUser);
+            } else if (users.length > 0) {
+                setUsername(users[0].username);
+            }
+
+            // Load recent documents (last 5)
+            const localDocs = JSON.parse(localStorage.getItem("documents")) || [];
+            // Show most recent documents first
+            const recentDocs = [...localDocs].reverse().slice(0, 5);
+            setDocuments(recentDocs);
+        } catch (error) {
+            console.error("Error loading local data:", error);
+        }
+    }, []);
 
 
 
