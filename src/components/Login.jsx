@@ -1,12 +1,13 @@
 import { useState } from "react";
 
 const Login = () => {
-    const [step, setStep] = useState("register"); // register | mobile | otp
+    const [step, setStep] = useState("mobile"); // register | mobile | otp
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [mobileNumber, setMobileNumber] = useState("");
     const [message, setMessage] = useState({ type: "", text: "" });
     const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
 
 
 
@@ -16,10 +17,17 @@ const Login = () => {
 
     };
 
+    // Send OTP
+    const handleSendOTP = async () => {
+
+    };
+
 
     // // Navigation between steps
     const goToStep = (targetStep) => {
-
+        setStep(targetStep);
+        setMessage({ type: "", text: "" });
+        setErrors({});
     };
 
     return (
@@ -129,6 +137,51 @@ const Login = () => {
                                 className="text-purple-600 font-semibold hover:underline"
                             >
                                 Login here
+                            </button>
+                        </p>
+                    </>
+                )}
+
+                {/*Login Page (Send OTP) */}
+                {step === "mobile" && (
+                    <>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                                <input
+                                    type="tel"
+                                    placeholder="Enter registered mobile number"
+                                    value={mobileNumber}
+                                    onChange={(e) => setMobileNumber(e.target.value)}
+                                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none transition ${errors.mobileNumber ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-blue-300 focus:border-blue-500"}`}
+                                />
+                                {errors.mobileNumber && <p className="mt-1 text-sm text-red-600">{errors.mobileNumber}</p>}
+                            </div>
+
+                            <button
+                                onClick={handleSendOTP}
+                                disabled={loading}
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-75 disabled:transform-none disabled:hover:shadow-md"
+                            >
+                                {loading ? (
+                                    <span className="flex items-center justify-center">
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Sending OTP...
+                                    </span>
+                                ) : "Send OTP"}
+                            </button>
+                        </div>
+
+                        <p className="text-center mt-6 text-sm text-gray-600">
+                            Don't have an account?{" "}
+                            <button
+                                onClick={() => goToStep("register")}
+                                className="text-blue-600 font-semibold hover:underline"
+                            >
+                                Register here
                             </button>
                         </p>
                     </>
