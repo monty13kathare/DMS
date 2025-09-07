@@ -1,13 +1,137 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 const FileList = ({ files, loading, onSearch }) => {
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [downloadAllLoading, setDownloadAllLoading] = useState(false);
     const [downloadingFile, setDownloadingFile] = useState(null);
 
-    const handleDownload = () => { }
+    const handlePreview = (file) => {
+        setSelectedFile(file);
+        setShowPreviewModal(true);
+    };
 
+    const handleDownload = async (fileId, fileName) => {
+        setDownloadingFile(fileId);
+        try {
+            // Try backend download first
+            if (response?.data?.success) {
+                // Create a Blob URL and download
+                const blobData = response.data.file;
+                let blob;
 
-    const handleDownloadAll = () => { }
+                if (typeof blobData === "string" && blobData.startsWith("data:")) {
+                    // Base64 from backend
+                    const base64Data = blobData.split(",")[1];
+                    const contentType = blobData.match(/data:(.*);base64,/)[1];
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    blob = new Blob([byteArray], { type: contentType });
+                } else {
+                    // Fallback if backend returns Blob
+                    blob = new Blob([blobData]);
+                }
+
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = fileName || "document";
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+        } catch (error) {
+            console.warn("Backend download failed, using localStorage fallback", error);
+
+            // Fallback: find file in localStorage
+            const localDocs = JSON.parse(localStorage.getItem("documents")) || [];
+            const localFile = localDocs.find((doc) => doc.id === fileId || doc.document_id === fileId);
+
+            if (localFile) {
+                const base64Data = localFile.file.split(",")[1];
+                const contentType = localFile.fileType || "application/octet-stream";
+                const byteCharacters = atob(base64Data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: contentType });
+
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = localFile.fileName || "document";
+                link.click();
+                URL.revokeObjectURL(link.href);
+            } else {
+                alert("File not available to download.");
+            }
+        } finally {
+            setDownloadingFile(null);
+        }
+    };
+
+    const handleDownloadAll = async () => {
+        setDownloadAllLoading(true);
+        try {
+            const fileIds = files.map((file) => file.id || file.document_id);
+
+            let filesToDownload = [];
+
+            try {
+                // Try backend download
+                const response = await documentAPI.downloadAllAsZip(fileIds);
+                if (response?.data?.success) {
+                    const element = document.createElement("a");
+                    element.setAttribute("href", "#");
+                    element.setAttribute("download", "documents.zip");
+                    element.style.display = "none";
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                    return;
+                }
+            } catch (backendError) {
+                console.warn("Backend not working, using localStorage fallback.", backendError);
+                // Fallback: get files from localStorage
+                const localDocs = JSON.parse(localStorage.getItem("documents")) || [];
+                filesToDownload = localDocs.filter((doc) => fileIds.includes(doc.document_id) || fileIds.includes(doc.id));
+            }
+
+            if (filesToDownload.length > 0) {
+                const zip = new JSZip();
+
+                filesToDownload.forEach((doc) => {
+                    // Convert Base64 dataURL to Blob
+                    const base64Data = doc.file.split(",")[1];
+                    const contentType = doc.fileType || doc.fileType || "application/octet-stream";
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: contentType });
+
+                    const fileName = doc.fileName || `document-${doc.id || Date.now()}`;
+                    zip.file(fileName, blob);
+                });
+
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                saveAs(zipBlob, "documents.zip");
+            } else {
+                alert("No files available to download.");
+            }
+        } catch (error) {
+            console.error("Download all error:", error);
+        } finally {
+            setDownloadAllLoading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -188,12 +312,7 @@ const FileList = ({ files, loading, onSearch }) => {
                 </table>
             </div>
 
-            {/* {showPreviewModal && (
-                <PreviewModal
-                    file={selectedFile}
-                    onClose={() => setShowPreviewModal(false)}
-                />
-            )} */}
+
         </div>
     );
 };
