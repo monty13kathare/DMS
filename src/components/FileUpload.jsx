@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { documentAPI } from "../api/api";
 
 const FileUpload = () => {
     const [file, setFile] = useState(null);
@@ -22,50 +23,71 @@ const FileUpload = () => {
         Company: ["Work Order", "Invoice", "Contracts"],
     };
 
+    // Input validation
+    const validateForm = () => {
+        const newErrors = {};
+
+        if (!file) newErrors.file = "Please select a file";
+        if (!majorHead) newErrors.majorHead = "Category is required";
+        if (!minorHead) newErrors.minorHead = "Subcategory is required";
+        if (!documentDate) newErrors.documentDate = "Document date is required";
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // Clear errors when inputs change
+    useEffect(() => {
+        setErrors({});
+    }, [file, majorHead, minorHead, documentDate]);
+
+    // Generate a random ID
+    const generateId = () => {
+        return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+    };
+
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
-
-        // Validate file type and size
         if (selectedFile) {
             const fileType = selectedFile.type;
-            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-
-            if (!validTypes.includes(fileType)) {
-                setErrors({ ...errors, file: "Please select a valid image (JPG, PNG) or PDF file" });
-                return;
+            if (fileType.includes("image/") || fileType === "application/pdf") {
+                setFile(selectedFile);
+                setMessage({ type: "", text: "" });
+                setErrors({ ...errors, file: "" });
+            } else {
+                setMessage({ type: "error", text: "Only image and PDF files are allowed" });
             }
-
-            if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
-                setErrors({ ...errors, file: "File size exceeds 10MB limit" });
-                return;
-            }
-
-            setFile(selectedFile);
-            setErrors({ ...errors, file: "" });
         }
     };
 
     const handleAddTag = () => {
-        if (!inputTag.trim()) return;
-
-        // Split tags by comma and trim whitespace
-        const newTags = inputTag.split(',')
-            .map(tag => tag.trim())
-            .filter(tag => tag.length > 0)
-            .map(tag => ({ tag_name: tag }));
-
-        if (newTags.length > 0) {
-            // Filter out duplicates
-            const uniqueNewTags = newTags.filter(tag =>
-                !tags.some(existingTag =>
-                    existingTag.tag_name.toLowerCase() === tag.tag_name.toLowerCase()
-                )
-            );
-
-            setTags([...tags, ...uniqueNewTags]);
+        if (inputTag && !tags.some((t) => t.tag_name === inputTag)) {
+            setTags([...tags, { tag_name: inputTag }]);
             setInputTag("");
         }
     };
+
+    // const handleAddTag = () => {
+    //     if (!inputTag.trim()) return;
+
+    //     // Split tags by comma and trim whitespace
+    //     const newTags = inputTag.split(',')
+    //         .map(tag => tag.trim())
+    //         .filter(tag => tag.length > 0)
+    //         .map(tag => ({ tag_name: tag }));
+
+    //     if (newTags.length > 0) {
+    //         // Filter out duplicates
+    //         const uniqueNewTags = newTags.filter(tag =>
+    //             !tags.some(existingTag =>
+    //                 existingTag.tag_name.toLowerCase() === tag.tag_name.toLowerCase()
+    //             )
+    //         );
+
+    //         setTags([...tags, ...uniqueNewTags]);
+    //         setInputTag("");
+    //     }
+    // };
 
     const handleTagInputChange = (e) => {
         const value = e.target.value;
@@ -101,61 +123,79 @@ const FileUpload = () => {
         setMajorHead("");
         setMinorHead("");
         setTags([]);
-        setInputTag("");
         setRemarks("");
-        setErrors({});
+        setInputTag("");
         setMessage({ type: "", text: "" });
-
-        // Reset file input
-        const fileInput = document.querySelector('input[type="file"]');
-        if (fileInput) fileInput.value = "";
+        setErrors({});
+        document.querySelector('input[type="file"]').value = "";
     };
 
-    const validateForm = () => {
-        const newErrors = {};
-
-        if (!file) newErrors.file = "File is required";
-        if (!documentDate) newErrors.documentDate = "Document date is required";
-        if (!majorHead) newErrors.majorHead = "Category is required";
-        if (majorHead && !minorHead) newErrors.minorHead = `${majorHead === "Personal" ? "Name" : "Department / Subcategory"} is required`;
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+    // Convert file to Base64
+    const fileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+        });
     };
+
+    // Save file and metadata to localStorage
+    const saveToLocalStorage = async (file, data) => {
+        const base64File = await fileToBase64(file);
+
+        const docData = {
+            id: generateId(),
+            ...data,
+            fileName: file.name,
+            fileType: file.type,
+            file: base64File,
+        };
+
+        const existingDocs = JSON.parse(localStorage.getItem("documents")) || [];
+        localStorage.setItem("documents", JSON.stringify([...existingDocs, docData]));
+    };
+
+
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            setMessage({ type: "error", text: "Please fill all required fields" });
+            return;
+        }
 
         setLoading(true);
-        setMessage({ type: "", text: "" });
+
+        const fileData = {
+            major_head: majorHead,
+            minor_head: minorHead,
+            document_date: documentDate.toISOString().split("T")[0],
+            document_remarks: remarks,
+            tags,
+            user_id: uploadedBy || "admin",
+        };
 
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('documentDate', documentDate.toISOString());
-            formData.append('majorHead', majorHead);
-            formData.append('minorHead', minorHead);
-            formData.append('remarks', remarks);
-            formData.append('uploadedBy', uploadedBy);
+            // Try backend upload first
+            const token = localStorage.getItem("token");
+            const response = await documentAPI.uploadFile(file, fileData, token);
 
-            if (tags.length > 0) {
-                formData.append('tags', JSON.stringify(tags));
+            if (response.data?.success) {
+                setMessage({ type: "success", text: "File uploaded successfully ✅" });
+                resetForm();
+            } else {
+                setMessage({ type: "warning", text: "Upload failed, saving locally..." });
+                await saveToLocalStorage(file, fileData);
+                resetForm();
             }
-
-
-            setMessage({
-                type: "success",
-                text: "Document uploaded successfully!"
-            });
-            resetForm();
         } catch (error) {
-            console.error("Upload error:", error);
-            setMessage({
-                type: "error",
-                text: error.response?.data?.message || "Failed to upload document. Please try again."
-            });
+            console.warn("Backend failed, saving to localStorage", error);
+            await saveToLocalStorage(file, fileData);
+            setMessage({ type: "success", text: "Document saved locally successfully ✅" });
+            resetForm();
         } finally {
             setLoading(false);
         }
