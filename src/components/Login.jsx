@@ -60,16 +60,27 @@ const Login = ({ onLogin }) => {
         if (!validateInputs()) return;
 
         const users = getUsers();
+
+        //Check username already exists
         if (users.find((u) => u.username === username)) {
-            setMessage({ type: "error", text: "User already exists!" });
+            setMessage({ type: "error", text: "Username already exists!" });
             return;
         }
+
+        //Check mobile number already exists
+        if (users.find((u) => u.mobileNumber === mobileNumber)) {
+            setMessage({ type: "error", text: "This mobile number is already registered!" });
+            return;
+        }
+
+        //If unique, save new user
         users.push({ username, password, mobileNumber });
         saveUsers(users);
 
         setMessage({ type: "success", text: "User registered successfully!" });
         setStep("mobile");
     };
+
 
     // Send OTP
     const handleSendOTP = async () => {
