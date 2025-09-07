@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import FilePreviewModal from "./FilePreviewModal";
 
 const FileList = ({ files, loading, onSearch }) => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -312,6 +313,12 @@ const FileList = ({ files, loading, onSearch }) => {
                 </table>
             </div>
 
+            {showPreviewModal && (
+                <FilePreviewModal
+                    file={selectedFile}
+                    onClose={() => setShowPreviewModal(false)}
+                />
+            )}
 
         </div>
     );
