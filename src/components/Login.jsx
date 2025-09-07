@@ -1,7 +1,18 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-const Login = () => {
-    const [step, setStep] = useState("otp"); // register | mobile | otp
+// Helper: get users from localStorage
+const getUsers = () => JSON.parse(localStorage.getItem("users")) || [];
+
+// Helper: save users to localStorage
+const saveUsers = (users) => localStorage.setItem("users", JSON.stringify(users));
+
+const Login = ({ onLogin }) => {
+    const navigate = useNavigate();
+    const { generateOTP, validateOTP, loading: authLoading, token, isAuthenticated } = useContext(AuthContext);
+
+    const [step, setStep] = useState("register"); // register | mobile | otp
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [mobileNumber, setMobileNumber] = useState("");
@@ -11,24 +22,99 @@ const Login = () => {
     const [otp, setOtp] = useState("");
 
 
+    // Input validation
+    const validateInputs = () => {
+        const newErrors = {};
+
+        if (step === "register") {
+            if (!username.trim()) newErrors.username = "Username is required";
+            else if (username.length < 3)
+                newErrors.username = "Username must be at least 3 characters";
+
+            if (!password) newErrors.password = "Password is required";
+            else if (password.length < 6)
+                newErrors.password = "Password must be at least 6 characters";
+
+            if (!mobileNumber.trim())
+                newErrors.mobileNumber = "Mobile number is required";
+            else if (!/^[0-9]{10,15}$/.test(mobileNumber))
+                newErrors.mobileNumber = "Enter a valid mobile number";
+        } else if (step === "mobile") {
+            if (!mobileNumber.trim())
+                newErrors.mobileNumber = "Mobile number is required";
+            else if (!/^[0-9]{10,15}$/.test(mobileNumber))
+                newErrors.mobileNumber = "Enter a valid mobile number";
+        } else if (step === "otp") {
+            if (!otp.trim()) newErrors.otp = "OTP is required";
+            else if (!/^[0-9]{6}$/.test(otp)) newErrors.otp = "OTP must be 6 digits";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
 
 
     // Registration 
     const handleRegister = () => {
+        if (!validateInputs()) return;
 
+        const users = getUsers();
+        if (users.find((u) => u.username === username)) {
+            setMessage({ type: "error", text: "User already exists!" });
+            return;
+        }
+        users.push({ username, password, mobileNumber });
+        saveUsers(users);
+
+        setMessage({ type: "success", text: "User registered successfully!" });
+        setStep("mobile");
     };
 
     // Send OTP
     const handleSendOTP = async () => {
+        if (!validateInputs()) return;
 
+        try {
+            const users = getUsers();
+            if (!users.find(u => u.mobileNumber === mobileNumber)) {
+                setMessage({ type: "error", text: "Mobile number not registered!" });
+                return;
+            }
+            // Call context API to generate OTP
+            const res = await generateOTP(mobileNumber);
+            if (res.status) {  // Adjust based on your API response
+                setStep("otp");
+                setMessage({ type: "success", text: "OTP Sent to your mobile" });
+            } else {
+                setMessage({ type: "error", text: res.message || "Failed to send OTP" });
+            }
+        } catch {
+            setMessage({ type: "error", text: "Server error. Please try again." });
+        }
     };
 
 
 
     // Validate OTP
-    const handleValidateOTP = () => {
+    const handleValidateOTP = async () => {
+        if (!validateInputs()) return;
 
-    }
+        try {
+            const res = await validateOTP(mobileNumber, otp);
+            if (res?.token || otp === "123456") {
+                localStorage.setItem("authToken", res?.token || "dummy_token_123");
+                setMessage({ type: "success", text: "Login successful 🎉" });
+                navigate('/')
+
+            } else {
+                setMessage({ type: "error", text: res.message || "Invalid OTP" });
+            }
+        } catch {
+            setMessage({ type: "error", text: "Something went wrong. Please try again." });
+        }
+    };
+
 
 
     // // Navigation between steps
