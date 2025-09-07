@@ -189,7 +189,7 @@ const FileUpload = () => {
             } else {
                 setMessage({ type: "warning", text: "Upload failed, saving locally..." });
                 await saveToLocalStorage(file, fileData);
-                resetForm();
+                // resetForm();
             }
         } catch (error) {
             console.warn("Backend failed, saving to localStorage", error);

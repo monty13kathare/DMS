@@ -8,7 +8,9 @@ const Header = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
-
+        localStorage.removeItem("authToken");
+        navigate("/login");
+        setShowLogoutConfirm(false);
     };
 
     const navItems = [

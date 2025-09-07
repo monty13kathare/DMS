@@ -5,6 +5,7 @@ const Dashboard = () => {
     const [username, setUsername] = useState("");
     const [documents, setDocuments] = useState([]);
 
+
     useEffect(() => {
         try {
             //Load logged-in user
@@ -188,11 +189,17 @@ const Dashboard = () => {
                                             <div className="flex items-center">
                                                 <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
                                                     <span className="text-blue-600 font-medium">
-                                                        {doc.fileType ? doc.fileType.charAt(0).toUpperCase() : 'D'}
+                                                        {doc.fileName ? doc.fileName.charAt(0).toUpperCase() : 'D'}
                                                     </span>
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{doc.fileName}</div>
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {doc?.fileName
+                                                            ? doc.fileName.includes(".")
+                                                                ? doc.fileName.slice(0, doc.fileName.lastIndexOf("."))
+                                                                : doc.fileName
+                                                            : "Untitled"}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
