@@ -53,20 +53,7 @@ export const documentAPI = {
   },
 
   searchDocuments: (filters) => {
-    const payload = {
-      major_head: filters.major_head || "",
-      minor_head: filters.minor_head || "",
-      from_date: filters.from_date || "",
-      to_date: filters.to_date || "",
-      tags: (filters.tags || []).map((t) => ({ tag_name: t })),
-      uploaded_by: filters.uploaded_by || "",
-      start: filters.start || 0,
-      length: filters.length || 10,
-      filterId: filters.filterId || "",
-      search: { value: filters.searchValue || "" },
-    };
-
-    return api.post("/searchDocumentEntry", payload);
+    return api.post("/searchDocumentEntry", filters);
   },
 
   getTags: (term = "") => {
