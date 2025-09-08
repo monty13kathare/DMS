@@ -9,6 +9,8 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [tags, setTags] = useState([]);
+    const [recentFiles, setRecentFiles] = useState([]);
+    const [recentFilesLoading, setRecentFilesLoading] = useState(false);
 
     // Keep token in localStorage in sync
     useEffect(() => {
@@ -65,6 +67,39 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Load recent files
+    const loadRecentFiles = async () => {
+        try {
+            setRecentFilesLoading(true);
+            const payload = {
+                start: 0,
+                length: 10,
+                search: { value: "" },
+                major_head: "",
+                minor_head: "",
+                from_date: "",
+                to_date: "",
+                tags: [],
+                uploaded_by: "",
+            };
+
+            const res = await documentAPI.searchDocuments(payload);
+            if (res?.data?.data) {
+                const sorted = res.data.data.sort(
+                    (a, b) => new Date(b.upload_time) - new Date(a.upload_time)
+                );
+                setRecentFiles(sorted.slice(0, 5)); // latest 5
+            } else {
+                setRecentFiles([]);
+            }
+        } catch (err) {
+            console.error("Error fetching recent files:", err);
+            setRecentFiles([]);
+        } finally {
+            setRecentFilesLoading(false);
+        }
+    };
+
     // Logout
     const logout = () => {
         setToken(null);
@@ -92,6 +127,9 @@ export const AuthProvider = ({ children }) => {
                 tags,
                 setTags,
                 addTag,
+                recentFiles,
+                recentFilesLoading,
+                loadRecentFiles,
             }}
         >
             {children}

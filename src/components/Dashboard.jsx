@@ -1,10 +1,18 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { formatDate, getFileInfo } from "../util/helper";
 
 const Dashboard = () => {
+    const { recentFiles, recentFilesLoading, loadRecentFiles } =
+        useContext(AuthContext);
     const [username, setUsername] = useState("");
     const [documents, setDocuments] = useState([]);
 
+
+    useEffect(() => {
+        loadRecentFiles();
+    }, []);
 
     useEffect(() => {
         try {
@@ -53,12 +61,12 @@ const Dashboard = () => {
                 <div className="bg-white p-5 rounded-2xl shadow-md border-l-4 border-blue-500">
                     <h3 className="text-gray-500 text-sm font-medium">Total Documents</h3>
                     <p className="text-2xl font-bold text-gray-800 mt-1">
-                        {documents?.length || 0}
+                        {recentFiles?.length || 0}
                     </p>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                         <div
                             className="bg-blue-500 h-2 rounded-full"
-                            style={{ width: `${Math.min(100, documents?.length * 20)}%` }}
+                            style={{ width: `${Math.min(100, recentFiles?.length * 5)}%` }}
                         ></div>
                     </div>
                 </div>
@@ -66,12 +74,12 @@ const Dashboard = () => {
                 <div className="bg-white p-5 rounded-2xl shadow-md border-l-4 border-purple-500">
                     <h3 className="text-gray-500 text-sm font-medium">Recent Activity</h3>
                     <p className="text-2xl font-bold text-gray-800 mt-1">
-                        {documents?.length > 0 ? documents?.length : "No"} recent files
+                        {recentFiles?.length > 0 ? recentFiles?.length : "No"} recent files
                     </p>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                         <div
                             className="bg-purple-500 h-2 rounded-full"
-                            style={{ width: `${Math.min(100, documents?.length * 20)}%` }}
+                            style={{ width: `${Math.min(100, recentFiles?.length * 5)}%` }}
                         ></div>
                     </div>
                 </div>
@@ -79,12 +87,12 @@ const Dashboard = () => {
                 <div className="bg-white p-5 rounded-2xl shadow-md border-l-4 border-green-500">
                     <h3 className="text-gray-500 text-sm font-medium">Storage</h3>
                     <p className="text-2xl font-bold text-gray-800 mt-1">
-                        {documents?.length * 2} MB
+                        {recentFiles?.length * 2} MB
                     </p>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                         <div
                             className="bg-green-500 h-2 rounded-full"
-                            style={{ width: `${Math.min(100, documents.length * 15)}%` }}
+                            style={{ width: `${Math.min(100, recentFiles.length * 5)}%` }}
                         ></div>
                     </div>
                 </div>
@@ -161,7 +169,7 @@ const Dashboard = () => {
             <div className="bg-white p-6 rounded-2xl shadow-md">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-gray-800">Recent Documents</h2>
-                    {documents.length > 0 && (
+                    {recentFiles.length > 0 && (
                         <Link
                             to="/search"
                             className="text-sm text-blue-600 font-medium hover:underline"
@@ -171,7 +179,7 @@ const Dashboard = () => {
                     )}
                 </div>
 
-                {documents.length > 0 ? (
+                {recentFiles.length > 0 ? (
                     <div className="overflow-x-auto rounded-xl shadow-inner">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
@@ -183,36 +191,32 @@ const Dashboard = () => {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {documents.map((doc, i) => (
+                                {recentFiles.map((doc, i) => (
                                     <tr key={i} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-4 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
                                                     <span className="text-blue-600 font-medium">
-                                                        {doc.fileName ? doc.fileName.charAt(0).toUpperCase() : 'D'}
+                                                        {getFileInfo(doc.file_url)?.name ? getFileInfo(doc.file_url)?.name?.charAt(0).toUpperCase() : 'D'}
                                                     </span>
                                                 </div>
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">
-                                                        {doc?.fileName
-                                                            ? doc.fileName.includes(".")
-                                                                ? doc.fileName.slice(0, doc.fileName.lastIndexOf("."))
-                                                                : doc.fileName
-                                                            : "Untitled"}
+                                                        {getFileInfo(doc.file_url)?.name || "Untitled"}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 whitespace-nowrap">
                                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                {doc.fileType ? doc.fileType.toUpperCase() : "N/A"}
+                                                {getFileInfo(doc.file_url)?.type?.toUpperCase() || "N/A"}
                                             </span>
                                         </td>
                                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
                                             {doc.major_head}/{doc.minor_head}
                                         </td>
                                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {doc.document_date || "N/A"}
+                                            {formatDate(doc.document_date) || "N/A"}
                                         </td>
                                     </tr>
                                 ))}

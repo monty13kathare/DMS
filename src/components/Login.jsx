@@ -10,7 +10,7 @@ const getUsers = () => JSON.parse(localStorage.getItem("users")) || [];
 // Helper: save users to localStorage
 const saveUsers = (users) => localStorage.setItem("users", JSON.stringify(users));
 
-const Login = ({ onLogin }) => {
+const Login = () => {
     const navigate = useNavigate();
     const { generateOTP, validateOTP } = useContext(AuthContext);
 
