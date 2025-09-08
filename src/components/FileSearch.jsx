@@ -181,7 +181,7 @@ const FileSearch = () => {
                 start: 0,
                 tags: tags.map(tag => (tag)) || "",
                 uploaded_by: filters.uploaded_by || "",
-                length: filters.length || 10,
+                length: filters.length || 50,
                 search: {
                     value: filters.search || ""
                 }

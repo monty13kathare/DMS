@@ -1,21 +1,27 @@
+import { getFileInfo } from "../util/helper";
 
 const FilePreviewModal = ({ file, onClose }) => {
     if (!file) return null;
 
-    const fileType = (file.fileType || "").toLowerCase();
+
+    const fileData = getFileInfo(file?.file_url);
+
+
+    const fileType = (fileData?.type || "").toLowerCase();
+
 
     const renderPreview = () => {
         if (fileType === "application/pdf" || fileType === "pdf") {
             return (
                 <iframe
-                    src={file.file}
-                    title={file.fileName}
+                    src={file?.file_url}
+                    title={fileData?.name}
                     className="w-full h-full rounded-lg"
                     frameBorder="0"
                 />
             );
         } else if (fileType.startsWith("image/")) {
-            return <img src={file.file} alt={file.fileName} className="w-full h-full object-contain rounded-lg" />;
+            return <img src={file.file_url} alt={fileData?.name} className="w-full h-full object-contain rounded-lg" />;
         } else {
             return (
                 <div className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4 rounded-lg">
@@ -64,7 +70,7 @@ const FilePreviewModal = ({ file, onClose }) => {
                         {getFileIcon()}
                         <div>
                             <h3 className="text-xl font-semibold text-gray-800">Document Preview</h3>
-                            <p className="text-sm text-gray-600 truncate max-w-xs">{file.fileName || "Untitled"}</p>
+                            <p className="text-sm text-gray-600 truncate max-w-xs">{fileData?.name || "Untitled"}</p>
                         </div>
                     </div>
                     <button
@@ -98,7 +104,7 @@ const FilePreviewModal = ({ file, onClose }) => {
                                 <div className="space-y-4">
                                     <div>
                                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Name</p>
-                                        <p className="font-medium text-gray-800 truncate">{file.fileName || "Untitled"}</p>
+                                        <p className="font-medium text-gray-800 truncate">{fileData.name || "Untitled"}</p>
                                     </div>
 
                                     <div>
