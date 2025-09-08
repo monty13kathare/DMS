@@ -20,10 +20,14 @@ const FileSearch = () => {
     });
 
     const [searchResults, setSearchResults] = useState([]);
+    const [documentToDate, setDocumentToDate] = useState(new Date());
+    const [documentFromDate, setDocumentFromDate] = useState(new Date());
+
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
     const [error, setError] = useState("");
-    const [availableTags, setAvailableTags] = useState([]);
+    const [inputTag, setInputTag] = useState("");
+    const [tags, setTags] = useState([]);
     const [showTagSuggestions, setShowTagSuggestions] = useState(false);
 
     const minorHeadOptions = {
@@ -32,18 +36,18 @@ const FileSearch = () => {
         Company: ["Work Order", "Invoice", "Contracts"],
     };
 
+    // Date Formate
+    const formatDate = (date) => {
+        if (!date) return "";
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
 
     console.log('suggestedTags', suggestedTags)
 
-    // Get filtered tag suggestions based on input
-    const tagSuggestions = useMemo(() => {
-        if (!filters.inputTag.trim()) return availableTags;
 
-        return availableTags.filter(tag =>
-            tag.toLowerCase().includes(filters.inputTag.toLowerCase()) &&
-            !filters.tags.some(t => t.tag_name === tag)
-        );
-    }, [filters.inputTag, availableTags, filters.tags]);
 
     // Get all documents from localStorage
     const getAllDocuments = () => {
@@ -70,10 +74,7 @@ const FileSearch = () => {
         }));
     };
 
-    // Handle date changes
-    const handleDateChange = (name, date) => {
-        setFilters(prev => ({ ...prev, [name]: date }));
-    };
+
 
     // Handle tag operations
     const handleTagInput = (e) => {
@@ -82,53 +83,41 @@ const FileSearch = () => {
         setShowTagSuggestions(true);
     };
 
-    const addTags = () => {
-        if (!filters.inputTag.trim()) return;
 
-        const newTags = filters.inputTag
-            .split(/[,\s]+/)
-            .map(tag => tag.trim())
-            .filter(tag => tag.length > 0)
-            .map(tag => ({ tag_name: tag }));
 
-        if (newTags.length > 0) {
-            const uniqueNewTags = newTags.filter(tag =>
-                !filters.tags.some(existingTag =>
-                    existingTag.tag_name.toLowerCase() === tag.tag_name.toLowerCase()
-                )
-            );
 
-            setFilters(prev => ({
-                ...prev,
-                tags: [...prev.tags, ...uniqueNewTags],
-                inputTag: ""
-            }));
+
+    // Tag Input Handler
+    const handleTagInputChange = (e) => {
+        setInputTag(e.target.value);
+    };
+
+    // Add tag (new or from suggestion)
+    const handleAddTag = (tagObj) => {
+        if (!tagObj) return;
+
+        const newTag = { tag_name: tagObj.label || tagObj.tag_name || tagObj };
+
+        // Avoid duplicates
+        if (!tags.some((t) => t.tag_name.toLowerCase() === newTag.tag_name.toLowerCase())) {
+            setTags([...tags, newTag]);
         }
-        setShowTagSuggestions(false);
+        addTag(tagObj);
+        setInputTag("");
     };
 
-    const addSuggestedTag = (tag) => {
-        if (!filters.tags.some(t => t.tag_name === tag)) {
-            setFilters(prev => ({
-                ...prev,
-                tags: [...prev.tags, { tag_name: tag }],
-                inputTag: ""
-            }));
-        }
-        setShowTagSuggestions(false);
+    // Remove tag by tag_name
+    const handleRemoveTag = (tagToRemove) => {
+        setTags(tags.filter((t) => t.tag_name !== tagToRemove));
     };
 
-    const removeTag = (tagToRemove) => {
-        setFilters(prev => ({
-            ...prev,
-            tags: prev.tags.filter(t => t.tag_name !== tagToRemove)
-        }));
-    };
-
+    // Handle manual input
     const handleKeyPress = (e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" || e.key === ",") {
             e.preventDefault();
-            addTags();
+            if (inputTag.trim()) {
+                handleAddTag({ label: inputTag.trim() });
+            }
         }
     };
 
@@ -182,22 +171,22 @@ const FileSearch = () => {
         setSearched(true);
 
         try {
-            // Format dates for API
-            const fromDate = filters.from_date ? filters.from_date.toISOString().split('T')[0] : "";
-            const toDate = filters.to_date ? filters.to_date.toISOString().split('T')[0] : "";
 
             // Prepare API payload with proper formatting
             const apiPayload = {
                 major_head: filters.major_head || "",
                 minor_head: filters.minor_head || "",
-                from_date: fromDate,
-                to_date: toDate,
-                tags: (filters.tags || []).map(tag => ({ tag_name: tag })),
+                from_date: formatDate(documentFromDate) || "",
+                to_date: formatDate(documentToDate) || "",
+                start: 0,
+                tags: tags.map(tag => (tag)) || "",
                 uploaded_by: filters.uploaded_by || "",
                 length: filters.length || 10,
-                search: filters.search || ""
+                search: {
+                    value: filters.search || ""
+                }
             };
-
+            console.log('apiPayload', apiPayload)
             // Call the API
             const response = await documentAPI.searchDocuments(apiPayload);
             // Set results from API response
@@ -226,13 +215,15 @@ const FileSearch = () => {
         setFilters({
             major_head: "",
             minor_head: "",
-            from_date: null,
-            to_date: null,
             tags: [],
             inputTag: "",
             uploaded_by: "",
             search: "",
+            from_date: null,
+            to_date: null,
         });
+        setDocumentFromDate(null);
+        setDocumentToDate(null)
         setSearchResults([]);
         setSearched(false);
         setError("");
@@ -320,9 +311,9 @@ const FileSearch = () => {
                                 From Date
                             </label>
                             <DatePicker
-                                selected={filters.from_date}
+                                selected={documentFromDate}
                                 dateFormat="dd/MM/yyyy"
-                                onChange={date => handleDateChange("from_date", date)}
+                                onChange={(date) => setDocumentFromDate(date)}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 placeholderText="Select start date"
                                 isClearable
@@ -334,9 +325,9 @@ const FileSearch = () => {
                                 To Date
                             </label>
                             <DatePicker
-                                selected={filters.to_date}
+                                selected={documentToDate}
                                 dateFormat="dd/MM/yyyy"
-                                onChange={date => handleDateChange("to_date", date)}
+                                onChange={(date) => setDocumentToDate(date)}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 placeholderText="Select end date"
                                 isClearable
@@ -374,92 +365,65 @@ const FileSearch = () => {
                         </div>
                     </div>
 
-                    {/* Tags */}
-                    <div className="mt-6 space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                            Tags
-                        </label>
 
-                        <div className="mb-3">
-                            <p className="text-xs text-gray-500 mb-2">
-                                Add tags separated by commas or spaces, or select from suggestions
-                            </p>
-                            <div className="flex flex-wrap gap-2 mb-2">
-                                {filters.tags.map(tag => (
-                                    <span
-                                        key={tag.tag_name}
-                                        className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full flex items-center text-sm"
-                                    >
+
+                    {/* Tags */}
+                    <div className="space-y-2">
+                        <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Tags</label>
+                        <div className="mb-2">
+                            <p className="text-xs text-gray-500 mb-2">Type tags separated by commas or spaces (they will be added automatically)</p>
+                            <div className="flex flex-wrap gap-2">
+                                {tags.map((tag) => (
+                                    <span key={tag.tag_name} className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium">
                                         {tag.tag_name}
                                         <button
                                             type="button"
-                                            onClick={() => removeTag(tag.tag_name)}
-                                            className="ml-1.5 text-blue-600 hover:text-blue-800 font-bold text-lg"
+                                            onClick={() => handleRemoveTag(tag.tag_name)}
+                                            className="ml-1 text-purple-600 hover:text-purple-800 font-bold"
                                         >
                                             &times;
                                         </button>
                                     </span>
                                 ))}
+                                {tags.length === 0 && (
+                                    <span className="text-xs text-gray-400 italic">No tags added yet</span>
+                                )}
                             </div>
                         </div>
-
-                        <div className="relative">
-                            <div className="flex gap-2">
-                                <div className="flex-1 relative">
-                                    <input
-                                        type="text"
-                                        value={filters.inputTag}
-                                        onChange={handleTagInput}
-                                        onKeyPress={handleKeyPress}
-                                        onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                        placeholder="Type tags or select from suggestions..."
-                                    />
-
-                                    {showTagSuggestions && tagSuggestions.length > 0 && (
-                                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                            {tagSuggestions.map(tag => (
-                                                <div
-                                                    key={tag}
-                                                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer transition-colors"
-                                                    onMouseDown={() => addSuggestedTag(tag)}
-                                                >
-                                                    {tag}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={addTags}
-                                    className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                                >
-                                    Add Tags
-                                </button>
-                            </div>
-
-                            {availableTags.length > 0 && (
-                                <div className="mt-3">
-                                    <p className="text-xs text-gray-500 mb-1">Suggested tags:</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {availableTags.slice(0, 8).map(tag => (
+                        <div className="flex flex-col gap-2">
+                            <input
+                                id="tags"
+                                type="text"
+                                value={inputTag}
+                                onChange={handleTagInputChange}
+                                onKeyPress={handleKeyPress}
+                                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-purple-500 focus:outline-none transition"
+                                placeholder="Type tags (separate with commas or Enter)..."
+                            />
+                            {/* Suggested Tags */}
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {suggestedTags
+                                    .filter(
+                                        (s) =>
+                                            !tags.some((t) => t.tag_name === s.tag_name) &&
+                                            s.tag_name?.toLowerCase().includes(inputTag.toLowerCase())
+                                    )
+                                    .slice(0, 25)
+                                    .map((s) => (
+                                        <span
+                                            key={s.tag_name}
+                                            className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium"
+                                        >
                                             <button
-                                                key={tag}
                                                 type="button"
-                                                onClick={() => addSuggestedTag(tag)}
-                                                disabled={filters.tags.some(t => t.tag_name === tag)}
-                                                className={`px-3 py-1.5 rounded-full text-sm transition-colors ${filters.tags.some(t => t.tag_name === tag)
-                                                    ? 'bg-blue-500 text-white cursor-not-allowed'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                    }`}
+                                                onClick={() => handleAddTag(s)}
+                                                className="ml-1 text-purple-600 hover:text-purple-800 font-normal"
                                             >
-                                                {tag}
+                                                {s.tag_name}
                                             </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                        </span>
+                                    ))}
+                            </div>
                         </div>
                     </div>
 

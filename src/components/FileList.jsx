@@ -2,12 +2,15 @@ import React, { useState } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import FilePreviewModal from "./FilePreviewModal";
+import { formatDate, getFileInfo } from "../util/helper";
 
 const FileList = ({ files, loading, onSearch }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [downloadAllLoading, setDownloadAllLoading] = useState(false);
     const [downloadingFile, setDownloadingFile] = useState(null);
+
+    console.log('files', files)
 
     const handlePreview = (file) => {
         setSelectedFile(file);
@@ -214,12 +217,13 @@ const FileList = ({ files, loading, onSearch }) => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {files.map((file) => {
+                            const fileData = getFileInfo(file?.file_url)
                             const id = file.id || file.document_id;
-                            const name = file.fileName || "Unnamed File";
-                            const type = (file.fileType || "").toUpperCase() || "UNKNOWN";
+                            const name = fileData.name || "Unnamed File";
+                            const type = (fileData.type || "").toUpperCase() || "UNKNOWN";
                             const major = file.major_head || "-";
                             const minor = file.minor_head || "-";
-                            const date = file.uploadDate || file.document_date || "N/A";
+                            const date = formatDate(file.uploadDate || file.document_date) || "N/A";
                             const tags = file.tags || [];
 
                             return (
