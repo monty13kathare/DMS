@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { documentAPI } from "../api/api";
+import { AuthContext } from "../context/AuthContext";
 
 const FileUpload = () => {
+    const { tags: suggestedTags, addTag } = useContext(AuthContext);
+
     const [file, setFile] = useState(null);
     const [documentDate, setDocumentDate] = useState(new Date());
     const [majorHead, setMajorHead] = useState("");
@@ -13,7 +16,7 @@ const FileUpload = () => {
     const [remarks, setRemarks] = useState("");
     const [uploadedBy, setUploadedBy] = useState("admin");
     const [loading, setLoading] = useState(false);
-    const [suggestedTags, setSuggestedTags] = useState([]);
+    // const [suggestedTags, setSuggestedTags] = useState([]);
     const [message, setMessage] = useState({ type: "", text: "" });
     const [errors, setErrors] = useState({});
     const tagInputRef = useRef(null);
@@ -35,22 +38,22 @@ const FileUpload = () => {
     };
 
     // Load suggested tags from API
-    useEffect(() => {
-        const loadTags = async () => {
-            try {
-                const res = await documentAPI.getAllTags();
-                if (res.data?.status) {
-                    const normalized = res.data.data.map((t) => ({
-                        tag_name: t.label || t.tag_name || t
-                    }));
-                    setSuggestedTags(normalized);
-                }
-            } catch (err) {
-                console.error("Failed to load tags", err);
-            }
-        };
-        loadTags();
-    }, []);
+    // useEffect(() => {
+    //     const loadTags = async () => {
+    //         try {
+    //             const res = await documentAPI.getAllTags();
+    //             if (res.data?.status) {
+    //                 const normalized = res.data.data.map((t) => ({
+    //                     tag_name: t.label || t.tag_name || t
+    //                 }));
+    //                 setSuggestedTags(normalized);
+    //             }
+    //         } catch (err) {
+    //             console.error("Failed to load tags", err);
+    //         }
+    //     };
+    //     loadTags();
+    // }, []);
 
 
 
@@ -106,7 +109,7 @@ const FileUpload = () => {
         if (!tags.some((t) => t.tag_name.toLowerCase() === newTag.tag_name.toLowerCase())) {
             setTags([...tags, newTag]);
         }
-
+        addTag(tagObj);
         setInputTag("");
     };
 

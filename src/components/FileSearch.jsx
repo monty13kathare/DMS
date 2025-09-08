@@ -1,10 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useContext } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import FileList from "./FileList";
 import { documentAPI } from "../api/api";
+import { AuthContext } from "../context/AuthContext";
 
 const FileSearch = () => {
+    const { tags: suggestedTags, addTag } = useContext(AuthContext);
+
     const [filters, setFilters] = useState({
         major_head: "",
         minor_head: "",
@@ -20,12 +23,27 @@ const FileSearch = () => {
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
     const [error, setError] = useState("");
+    const [availableTags, setAvailableTags] = useState([]);
+    const [showTagSuggestions, setShowTagSuggestions] = useState(false);
 
     const minorHeadOptions = {
         Personal: ["John", "Tom", "Emily", "Sarah", "Michael", "Jessica"],
         Professional: ["Accounts", "HR", "IT", "Finance", "Marketing", "Operations"],
         Company: ["Work Order", "Invoice", "Contracts"],
     };
+
+
+    console.log('suggestedTags', suggestedTags)
+
+    // Get filtered tag suggestions based on input
+    const tagSuggestions = useMemo(() => {
+        if (!filters.inputTag.trim()) return availableTags;
+
+        return availableTags.filter(tag =>
+            tag.toLowerCase().includes(filters.inputTag.toLowerCase()) &&
+            !filters.tags.some(t => t.tag_name === tag)
+        );
+    }, [filters.inputTag, availableTags, filters.tags]);
 
     // Get all documents from localStorage
     const getAllDocuments = () => {
@@ -61,6 +79,7 @@ const FileSearch = () => {
     const handleTagInput = (e) => {
         const value = e.target.value;
         setFilters(prev => ({ ...prev, inputTag: value }));
+        setShowTagSuggestions(true);
     };
 
     const addTags = () => {
@@ -85,6 +104,18 @@ const FileSearch = () => {
                 inputTag: ""
             }));
         }
+        setShowTagSuggestions(false);
+    };
+
+    const addSuggestedTag = (tag) => {
+        if (!filters.tags.some(t => t.tag_name === tag)) {
+            setFilters(prev => ({
+                ...prev,
+                tags: [...prev.tags, { tag_name: tag }],
+                inputTag: ""
+            }));
+        }
+        setShowTagSuggestions(false);
     };
 
     const removeTag = (tagToRemove) => {
@@ -205,6 +236,7 @@ const FileSearch = () => {
         setSearchResults([]);
         setSearched(false);
         setError("");
+        setShowTagSuggestions(false);
     };
 
     // Get all files without filtering
@@ -226,30 +258,34 @@ const FileSearch = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-6">
             <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-6">
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
+                <div className="text-center mb-8">
+                    <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
                         Document Search
                     </h2>
-                    <p className="text-gray-600 mt-2">
-                        Find documents using advanced filters
+                    <p className="text-gray-600 max-w-2xl mx-auto">
+                        Find documents quickly using our advanced search filters and tag suggestions
                     </p>
                 </div>
 
                 {/* Search Panel */}
-                <div className="bg-white p-4 md:p-6 rounded-lg shadow-md mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="bg-white p-5 md:p-7 rounded-xl shadow-lg mb-8 border border-gray-100">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200">
+                        Search Filters
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
                         {/* Category */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Category
                             </label>
                             <select
                                 name="major_head"
                                 value={filters.major_head}
                                 onChange={handleInputChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             >
                                 <option value="">All Categories</option>
                                 <option value="Personal">Personal</option>
@@ -260,15 +296,15 @@ const FileSearch = () => {
 
                         {/* Subcategory */}
                         {filters.major_head && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">
                                     {filters.major_head === "Personal" ? "Name" : "Department"}
                                 </label>
                                 <select
                                     name="minor_head"
                                     value={filters.minor_head}
                                     onChange={handleInputChange}
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 >
                                     <option value="">All {filters.major_head === "Personal" ? "Names" : "Departments"}</option>
                                     {minorHeadOptions[filters.major_head]?.map(option => (
@@ -279,35 +315,37 @@ const FileSearch = () => {
                         )}
 
                         {/* Date Range */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 From Date
                             </label>
                             <DatePicker
                                 selected={filters.from_date}
                                 dateFormat="dd/MM/yyyy"
                                 onChange={date => handleDateChange("from_date", date)}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 placeholderText="Select start date"
+                                isClearable
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 To Date
                             </label>
                             <DatePicker
                                 selected={filters.to_date}
                                 dateFormat="dd/MM/yyyy"
                                 onChange={date => handleDateChange("to_date", date)}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 placeholderText="Select end date"
+                                isClearable
                             />
                         </div>
 
                         {/* Uploaded By */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Uploaded By
                             </label>
                             <input
@@ -315,14 +353,14 @@ const FileSearch = () => {
                                 name="uploaded_by"
                                 value={filters.uploaded_by}
                                 onChange={handleInputChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 placeholder="Enter uploader name"
                             />
                         </div>
 
                         {/* Search Text */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Search Text
                             </label>
                             <input
@@ -330,32 +368,33 @@ const FileSearch = () => {
                                 name="search"
                                 value={filters.search}
                                 onChange={handleInputChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 placeholder="Search by title, description or filename"
                             />
                         </div>
                     </div>
 
                     {/* Tags */}
-                    <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="mt-6 space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
                             Tags
                         </label>
-                        <div className="mb-2">
-                            <p className="text-xs text-gray-500 mb-1">
-                                Add tags separated by commas or spaces
+
+                        <div className="mb-3">
+                            <p className="text-xs text-gray-500 mb-2">
+                                Add tags separated by commas or spaces, or select from suggestions
                             </p>
-                            <div className="flex flex-wrap gap-1 mb-2">
+                            <div className="flex flex-wrap gap-2 mb-2">
                                 {filters.tags.map(tag => (
                                     <span
                                         key={tag.tag_name}
-                                        className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center text-xs"
+                                        className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full flex items-center text-sm"
                                     >
                                         {tag.tag_name}
                                         <button
                                             type="button"
                                             onClick={() => removeTag(tag.tag_name)}
-                                            className="ml-1 text-blue-600 hover:text-blue-800 font-bold"
+                                            className="ml-1.5 text-blue-600 hover:text-blue-800 font-bold text-lg"
                                         >
                                             &times;
                                         </button>
@@ -363,54 +402,122 @@ const FileSearch = () => {
                                 ))}
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={filters.inputTag}
-                                onChange={handleTagInput}
-                                onKeyPress={handleKeyPress}
-                                className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Type tags (separate with commas or spaces)..."
-                            />
-                            <button
-                                type="button"
-                                onClick={addTags}
-                                className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                            >
-                                Add
-                            </button>
+
+                        <div className="relative">
+                            <div className="flex gap-2">
+                                <div className="flex-1 relative">
+                                    <input
+                                        type="text"
+                                        value={filters.inputTag}
+                                        onChange={handleTagInput}
+                                        onKeyPress={handleKeyPress}
+                                        onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                        placeholder="Type tags or select from suggestions..."
+                                    />
+
+                                    {showTagSuggestions && tagSuggestions.length > 0 && (
+                                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                            {tagSuggestions.map(tag => (
+                                                <div
+                                                    key={tag}
+                                                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer transition-colors"
+                                                    onMouseDown={() => addSuggestedTag(tag)}
+                                                >
+                                                    {tag}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={addTags}
+                                    className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                                >
+                                    Add Tags
+                                </button>
+                            </div>
+
+                            {availableTags.length > 0 && (
+                                <div className="mt-3">
+                                    <p className="text-xs text-gray-500 mb-1">Suggested tags:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {availableTags.slice(0, 8).map(tag => (
+                                            <button
+                                                key={tag}
+                                                type="button"
+                                                onClick={() => addSuggestedTag(tag)}
+                                                disabled={filters.tags.some(t => t.tag_name === tag)}
+                                                className={`px-3 py-1.5 rounded-full text-sm transition-colors ${filters.tags.some(t => t.tag_name === tag)
+                                                    ? 'bg-blue-500 text-white cursor-not-allowed'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
+                                            >
+                                                {tag}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Error Message */}
                     {error && (
-                        <div className="mt-3 p-2 bg-red-100 text-red-700 rounded-md text-sm">
-                            {error}
+                        <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-100">
+                            <div className="flex items-center">
+                                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                                {error}
+                            </div>
                         </div>
                     )}
 
                     {/* Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-5 border-t border-gray-200">
                         <button
                             onClick={handleSearch}
                             disabled={loading}
-                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center"
                         >
-                            {loading ? "Searching..." : "Search Documents"}
+                            {loading ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Searching...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    Search Documents
+                                </>
+                            )}
                         </button>
 
                         <button
                             onClick={handleGetAllFiles}
                             disabled={loading}
-                            className="px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition disabled:opacity-50"
+                            className="px-5 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center"
                         >
-                            {loading ? "Loading..." : "Get All Files"}
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Get All Files
                         </button>
 
                         <button
                             onClick={handleReset}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-100 transition"
+                            className="px-5 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center"
                         >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
                             Reset
                         </button>
                     </div>
@@ -418,19 +525,23 @@ const FileSearch = () => {
 
                 {/* Results */}
                 {searched && (
-                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    <div className="bg-white p-5 md:p-7 rounded-xl shadow-lg border border-gray-100">
+                        <h3 className="text-xl font-semibold text-gray-800 mb-5 flex items-center">
+                            <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                             {searchResults.length} document{searchResults.length !== 1 ? 's' : ''} found
                         </h3>
 
                         {searchResults.length > 0 ? (
                             <FileList files={searchResults} />
                         ) : (
-                            <div className="text-center py-6 text-gray-500">
-                                <svg className="h-12 w-12 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div className="text-center py-8 text-gray-500">
+                                <svg className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <p>No documents match your search criteria</p>
+                                <p className="text-lg">No documents match your search criteria</p>
+                                <p className="text-sm mt-2">Try adjusting your filters or search terms</p>
                             </div>
                         )}
                     </div>
