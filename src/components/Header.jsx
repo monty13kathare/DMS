@@ -89,7 +89,7 @@ const Header = () => {
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden p-2 rounded-lg hover:bg-white hover:bg-opacity-15"
+                            className="md:hidden p-2 rounded-lg hover:bg-white hover:text-purple-600 hover:bg-opacity-15"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 {isMobileMenuOpen ? (
@@ -112,7 +112,7 @@ const Header = () => {
                                         onClick={() => setIsMobileMenuOpen(false)}
                                         className={`px-4 py-3 rounded-lg flex items-center transition-all duration-200 ${location.pathname === item.path
                                             ? 'bg-white text-purple-600 shadow-md'
-                                            : 'hover:bg-white hover:bg-opacity-15'
+                                            : 'hover:bg-white hover:text-purple-600 hover:bg-opacity-15'
                                             }`}
                                     >
                                         <span className="mr-3">{item.icon}</span>
@@ -126,7 +126,7 @@ const Header = () => {
                                         setIsMobileMenuOpen(false);
                                         setShowLogoutConfirm(true);
                                     }}
-                                    className="px-4 py-3 rounded-lg flex items-center hover:bg-white hover:bg-opacity-15 transition-all duration-200 text-left"
+                                    className="px-4 py-3 rounded-lg flex items-center hover:bg-white hover:text-purple-600 hover:bg-opacity-15 transition-all duration-200 text-left"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
