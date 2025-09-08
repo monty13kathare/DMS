@@ -19,8 +19,6 @@ const FileUpload = () => {
     const tagInputRef = useRef(null);
     const fileInputRef = useRef(null);
 
-    console.log('suggestedTags', suggestedTags)
-    console.log('tags', tags)
 
     const minorHeadOptions = {
         Personal: ["John", "Tom", "Emily", "Sarah", "Michael", "Jessica"],
@@ -39,11 +37,21 @@ const FileUpload = () => {
     // Load suggested tags from API
     useEffect(() => {
         const loadTags = async () => {
-            const res = await documentAPI.getAllTags();
-            if (res.data?.status) setSuggestedTags(res.data?.data?.map((t) => t));
+            try {
+                const res = await documentAPI.getAllTags();
+                if (res.data?.status) {
+                    const normalized = res.data.data.map((t) => ({
+                        tag_name: t.label || t.tag_name || t
+                    }));
+                    setSuggestedTags(normalized);
+                }
+            } catch (err) {
+                console.error("Failed to load tags", err);
+            }
         };
         loadTags();
     }, []);
+
 
 
     // Input validation
@@ -82,64 +90,37 @@ const FileUpload = () => {
         }
     };
 
-    // const handleAddTag = () => {
-    //     if (inputTag && !tags.some((t) => t.tag_name === inputTag)) {
-    //         setTags([...tags, { tag_name: inputTag }]);
-    //         setInputTag("");
-    //     }
-    // };
 
-    // Add tag (new or from suggestion)
-    // const handleAddTag = (tag) => {
-    //     if (
-    //         tag &&
-    //         !tags.some((t) => t.toLowerCase() === tag.toLowerCase())
-    //     ) {
-    //         setTags([...tags, tag]);
-    //     }
-    //     setInputTag("");
-    // };
-
-
-    // const handleRemoveTag = (tagToRemove) => {
-    //     setTags(tags.filter((t) => t !== tagToRemove));
-    // };
-
+    // Tag Input Handler
     const handleTagInputChange = (e) => {
         setInputTag(e.target.value);
     };
 
-    // const handleKeyPress = (e) => {
-    //     if (e.key === "Enter" || e.key === ",") {
-    //         e.preventDefault();
-    //         handleAddTag(inputTag.trim());
-    //     }
-    // };
-
     // Add tag (new or from suggestion)
     const handleAddTag = (tagObj) => {
-        if (
-            tagObj &&
-            !tags.some((t) => t.label.toLowerCase() === tagObj.label.toLowerCase())
-        ) {
-            setTags([...tags, tagObj]);
+        if (!tagObj) return;
+
+        const newTag = { tag_name: tagObj.label || tagObj.tag_name || tagObj };
+
+        // Avoid duplicates
+        if (!tags.some((t) => t.tag_name.toLowerCase() === newTag.tag_name.toLowerCase())) {
+            setTags([...tags, newTag]);
         }
+
         setInputTag("");
     };
 
-
-    const handleRemoveTag = (id) => {
-        setTags(tags.filter((t) => t.id !== id));
+    // Remove tag by tag_name
+    const handleRemoveTag = (tagToRemove) => {
+        setTags(tags.filter((t) => t.tag_name !== tagToRemove));
     };
 
+    // Handle manual input
     const handleKeyPress = (e) => {
         if (e.key === "Enter" || e.key === ",") {
             e.preventDefault();
             if (inputTag.trim()) {
-                handleAddTag({
-                    id: Date.now().toString(),  // generate temp ID
-                    label: inputTag.trim()
-                });
+                handleAddTag({ label: inputTag.trim() });
             }
         }
     };
@@ -206,23 +187,23 @@ const FileUpload = () => {
             user_id: uploadedBy || "admin",
         };
 
+        console.log('fileData', file, fileData)
         try {
             // Try backend upload first
-            const token = localStorage.getItem("authToken");
-            const response = await documentAPI.uploadFile(file, fileData, token);
+            // const token = localStorage.getItem("authToken");
+            const response = await documentAPI.uploadFile(file, fileData);
 
             if (response.data?.status) {
                 setMessage({ type: "success", text: "File uploaded successfully" });
-                await saveToLocalStorage(file, fileData);
                 resetForm();
             } else {
                 setMessage({ type: "warning", text: "Document saved locally successfully" });
-                await saveToLocalStorage(file, fileData);
-                // resetForm();
+                // await saveToLocalStorage(file, fileData);
+                resetForm();
             }
         } catch (error) {
             console.warn("Backend failed, saving to localStorage", error);
-            await saveToLocalStorage(file, fileData);
+            // await saveToLocalStorage(file, fileData);
             setMessage({ type: "success", text: "Document saved locally successfully" });
             resetForm();
         } finally {
@@ -356,11 +337,11 @@ const FileUpload = () => {
                             <p className="text-xs text-gray-500 mb-2">Type tags separated by commas or spaces (they will be added automatically)</p>
                             <div className="flex flex-wrap gap-2">
                                 {tags.map((tag) => (
-                                    <span key={tag.id} className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium">
-                                        {tag.label}
+                                    <span key={tag.tag_name} className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium">
+                                        {tag.tag_name}
                                         <button
                                             type="button"
-                                            onClick={() => handleRemoveTag(tag.id)}
+                                            onClick={() => handleRemoveTag(tag.tag_name)}
                                             className="ml-1 text-purple-600 hover:text-purple-800 font-bold"
                                         >
                                             &times;
@@ -388,22 +369,23 @@ const FileUpload = () => {
                                 {suggestedTags
                                     .filter(
                                         (s) =>
-                                            !tags.some((t) => t.id === s.id) &&
-                                            s.label?.toLowerCase().includes(inputTag.toLowerCase())
+                                            !tags.some((t) => t.tag_name === s.tag_name) &&
+                                            s.tag_name?.toLowerCase().includes(inputTag.toLowerCase())
                                     )
                                     .slice(0, 25)
                                     .map((s) => (
-                                        <span key={s.id} className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium">
+                                        <span
+                                            key={s.tag_name}
+                                            className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium"
+                                        >
                                             <button
-
                                                 type="button"
                                                 onClick={() => handleAddTag(s)}
                                                 className="ml-1 text-purple-600 hover:text-purple-800 font-normal"
                                             >
-                                                {s.label}
+                                                {s.tag_name}
                                             </button>
                                         </span>
-
                                     ))}
                             </div>
                         </div>
