@@ -3,6 +3,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { documentAPI } from "../api/api";
 import { AuthContext } from "../context/AuthContext";
+import { labelMap, minorHeadOptions } from "../util/helper";
 
 const FileUpload = () => {
     const { tags: suggestedTags, addTag } = useContext(AuthContext);
@@ -16,18 +17,13 @@ const FileUpload = () => {
     const [remarks, setRemarks] = useState("");
     const [uploadedBy, setUploadedBy] = useState("admin");
     const [loading, setLoading] = useState(false);
-    // const [suggestedTags, setSuggestedTags] = useState([]);
     const [message, setMessage] = useState({ type: "", text: "" });
     const [errors, setErrors] = useState({});
     const tagInputRef = useRef(null);
     const fileInputRef = useRef(null);
 
 
-    const minorHeadOptions = {
-        Personal: ["John", "Tom", "Emily", "Sarah", "Michael", "Jessica"],
-        Professional: ["Accounts", "HR", "IT", "Finance", "Marketing", "Operations"],
-        Company: ["Work Order", "Invoice", "Contracts"],
-    };
+
 
     // Date Formate
     const formatDate = (date) => {
@@ -36,24 +32,6 @@ const FileUpload = () => {
         const year = date.getFullYear();
         return `${day}-${month}-${year}`;
     };
-
-    // Load suggested tags from API
-    // useEffect(() => {
-    //     const loadTags = async () => {
-    //         try {
-    //             const res = await documentAPI.getAllTags();
-    //             if (res.data?.status) {
-    //                 const normalized = res.data.data.map((t) => ({
-    //                     tag_name: t.label || t.tag_name || t
-    //                 }));
-    //                 setSuggestedTags(normalized);
-    //             }
-    //         } catch (err) {
-    //             console.error("Failed to load tags", err);
-    //         }
-    //     };
-    //     loadTags();
-    // }, []);
 
 
 
@@ -152,20 +130,20 @@ const FileUpload = () => {
     };
 
     // Save file and metadata to localStorage
-    const saveToLocalStorage = async (file, data) => {
-        const base64File = await fileToBase64(file);
+    // const saveToLocalStorage = async (file, data) => {
+    //     const base64File = await fileToBase64(file);
 
-        const docData = {
-            id: generateId(),
-            ...data,
-            fileName: file.name,
-            fileType: file.type,
-            file: base64File,
-        };
+    //     const docData = {
+    //         id: generateId(),
+    //         ...data,
+    //         fileName: file.name,
+    //         fileType: file.type,
+    //         file: base64File,
+    //     };
 
-        const existingDocs = JSON.parse(localStorage.getItem("documents")) || [];
-        localStorage.setItem("documents", JSON.stringify([...existingDocs, docData]));
-    };
+    //     const existingDocs = JSON.parse(localStorage.getItem("documents")) || [];
+    //     localStorage.setItem("documents", JSON.stringify([...existingDocs, docData]));
+    // };
 
 
 
@@ -190,24 +168,20 @@ const FileUpload = () => {
             user_id: uploadedBy || "admin",
         };
 
-        console.log('fileData', file, fileData)
         try {
-            // Try backend upload first
-            // const token = localStorage.getItem("authToken");
             const response = await documentAPI.uploadFile(file, fileData);
 
             if (response.data?.status) {
                 setMessage({ type: "success", text: "File uploaded successfully" });
                 resetForm();
             } else {
-                setMessage({ type: "warning", text: "Document saved locally successfully" });
-                // await saveToLocalStorage(file, fileData);
+                setMessage({ type: "error", text: "Backend failed" });
                 resetForm();
             }
         } catch (error) {
             console.warn("Backend failed, saving to localStorage", error);
             // await saveToLocalStorage(file, fileData);
-            setMessage({ type: "success", text: "Document saved locally successfully" });
+            setMessage({ type: "error", text: "Backend failed" });
             resetForm();
         } finally {
             setLoading(false);
@@ -315,7 +289,7 @@ const FileUpload = () => {
                     {majorHead && (
                         <div className="space-y-2">
                             <label htmlFor="subcategory-select" className="block text-sm font-medium text-gray-700">
-                                {majorHead === "Personal" ? "Name" : "Department / Subcategory"} <span className="text-red-500">*</span>
+                                {labelMap[majorHead] || "Subcategory"} <span className="text-red-500">*</span>
                             </label>
                             <select
                                 id="subcategory-select"
@@ -337,7 +311,6 @@ const FileUpload = () => {
                     <div className="space-y-2">
                         <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Tags</label>
                         <div className="mb-2">
-                            <p className="text-xs text-gray-500 mb-2">Type tags separated by commas or spaces (they will be added automatically)</p>
                             <div className="flex flex-wrap gap-2">
                                 {tags.map((tag) => (
                                     <span key={tag.tag_name} className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium">
