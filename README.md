@@ -13,6 +13,7 @@ A modern web application for uploading, managing, and searching documents effici
 - [Installation](#installation)
 - [Running the Project](#running-the-project)
 - [Unit Testing](#unit-testing)
+- [Live Demo](#live-link)
 
 ---
 
@@ -45,42 +46,45 @@ A modern web application for uploading, managing, and searching documents effici
 
 ## Project Structure
 
+```
 DMS/
-├── node_modules/ # Project dependencies (auto-generated)
-├── public/ # Static assets served directly
-├── src/ # Main source code
-│ ├── api/ # API-related files
-│ │ └── api.js # API configuration and calls
-│ ├── assets/ # Static assets (images, fonts, etc.)
-│ ├── components/ # React components
-│ │ ├── **tests**/ # Component tests
+├── node_modules/                   # Project dependencies
+├── public/                         # Static assets
+├── src/
+│ ├── api/
+│ │ └── api.js                      # Axios instance for API calls
+│ ├── assets/                        # Images, icons, fonts
+│ ├── components/
+│ │ ├── tests/                       # Unit tests for components
 │ │ │ ├── FileUpload.test.jsx
 │ │ │ └── Login.test.jsx
-│ │ ├── Admin.jsx # Admin component
-│ │ ├── Dashboard.jsx # Dashboard component
-│ │ ├── FileList.jsx # File list component
-│ │ ├── FilePreviewModal.jsx # File preview modal component
-│ │ ├── FileSearch.jsx # File search component
-│ │ ├── FileUpload.jsx # File upload component
-│ │ ├── Header.jsx # Header component
-│ │ ├── Layout.jsx # Layout component
-│ │ ├── Login.jsx # Login component
-│ │ └── ProtectedRoute.jsx # Protected route component
-│ ├── context/ # React context files
-│ │ └── AuthContext.jsx # Authentication context
-│ ├── App.css # Main application styles
-│ ├── App.jsx # Root React component
-│ ├── index.css # Global styles
-│ ├── main.jsx # Application entry point
-│ └── setupTests.js # Test configuration
-├── .env # Environment variables
-├── .gitignore # Git ignore rules
-├── eslint.config.js # ESLint configuration
-├── index.html # HTML template
-├── package.json # Project dependencies and scripts
-├── package-lock.json # Dependency lock file
-├── README.md # Project documentation
-└── vite.config.js # Vite configuration
+│ │ ├── Admin.jsx
+│ │ ├── Dashboard.jsx
+│ │ ├── FileList.jsx
+│ │ ├── FilePreviewModal.jsx
+│ │ ├── FileSearch.jsx
+│ │ ├── FileUpload.jsx
+│ │ ├── Header.jsx
+│ │ ├── Layout.jsx
+│ │ ├── Login.jsx
+│ │ └── ProtectedRoute.jsx
+│ ├── context/
+│ │ └── AuthContext.jsx             # Authentication state
+│ ├── App.css
+│ ├── App.jsx                        # Root component
+│ ├── index.css
+│ ├── main.jsx                        # Entry point
+│ └── setupTests.js                   # Testing setup
+├── .env                             # Environment variables
+├── .gitignore
+├── eslint.config.js
+├── index.html
+├── package.json
+├── package-lock.json
+├── README.md
+└── vite.config.js
+
+```
 
 ## Components
 
@@ -106,3 +110,51 @@ DMS/
 - **Admin.jsx** - Administrative interface for user management
 
 ## Installation
+
+Follow these steps to set up the project locally:
+
+1. Clone the repository
+
+```
+git clone https://github.com/monty13kathare/DMS.git
+
+```
+
+2. Install dependencies
+
+```
+npm install
+```
+
+3. Set up environment variables
+   Create a .env file in the root directory and add any necessary environment variables. Example:
+
+```
+VITE_API_BASE_URL=https://apis.allsoft.co/api/documentManagement
+```
+
+4. Start the development server
+
+```
+npm run dev
+```
+
+## Running the Project
+
+After installation:
+
+```
+npm run dev
+```
+
+## Unit Testing
+
+This project uses Vitest and React Testing Library for unit testing.
+
+1. Run tests
+
+```
+npm run test
+```
+
+## Live Demo - [Link Text](https://example.com)
