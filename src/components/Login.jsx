@@ -192,8 +192,9 @@ const Login = ({ onLogin }) => {
                     <>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
                                 <input
+                                    id="username"
                                     type="text"
                                     placeholder="Enter username"
                                     value={username}
@@ -204,8 +205,9 @@ const Login = ({ onLogin }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                                 <input
+                                    id="password"
                                     type="password"
                                     placeholder="Create password"
                                     value={password}
@@ -216,8 +218,9 @@ const Login = ({ onLogin }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                                <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
                                 <input
+                                    id="mobileNumber"
                                     type="tel"
                                     placeholder="Enter mobile number"
                                     value={mobileNumber}
@@ -252,8 +255,9 @@ const Login = ({ onLogin }) => {
                     <>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                                <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
                                 <input
+                                    id="mobileNumber"
                                     type="tel"
                                     placeholder="Enter registered mobile number"
                                     value={mobileNumber}
@@ -302,8 +306,9 @@ const Login = ({ onLogin }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+                                <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
                                 <input
+                                    id="otp"
                                     type="text"
                                     placeholder="Enter 6-digit code"
                                     value={otp}
