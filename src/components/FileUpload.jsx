@@ -13,10 +13,14 @@ const FileUpload = () => {
     const [remarks, setRemarks] = useState("");
     const [uploadedBy, setUploadedBy] = useState("admin");
     const [loading, setLoading] = useState(false);
+    const [suggestedTags, setSuggestedTags] = useState([]);
     const [message, setMessage] = useState({ type: "", text: "" });
     const [errors, setErrors] = useState({});
     const tagInputRef = useRef(null);
     const fileInputRef = useRef(null);
+
+    console.log('suggestedTags', suggestedTags)
+    console.log('tags', tags)
 
     const minorHeadOptions = {
         Personal: ["John", "Tom", "Emily", "Sarah", "Michael", "Jessica"],
@@ -31,6 +35,15 @@ const FileUpload = () => {
         const year = date.getFullYear();
         return `${day}-${month}-${year}`;
     };
+
+    // Load suggested tags from API
+    useEffect(() => {
+        const loadTags = async () => {
+            const res = await documentAPI.getAllTags();
+            if (res.data?.status) setSuggestedTags(res.data?.data?.map((t) => t));
+        };
+        loadTags();
+    }, []);
 
 
     // Input validation
@@ -69,42 +82,68 @@ const FileUpload = () => {
         }
     };
 
-    const handleAddTag = () => {
-        if (inputTag && !tags.some((t) => t.tag_name === inputTag)) {
-            setTags([...tags, { tag_name: inputTag }]);
-            setInputTag("");
+    // const handleAddTag = () => {
+    //     if (inputTag && !tags.some((t) => t.tag_name === inputTag)) {
+    //         setTags([...tags, { tag_name: inputTag }]);
+    //         setInputTag("");
+    //     }
+    // };
+
+    // Add tag (new or from suggestion)
+    // const handleAddTag = (tag) => {
+    //     if (
+    //         tag &&
+    //         !tags.some((t) => t.toLowerCase() === tag.toLowerCase())
+    //     ) {
+    //         setTags([...tags, tag]);
+    //     }
+    //     setInputTag("");
+    // };
+
+
+    // const handleRemoveTag = (tagToRemove) => {
+    //     setTags(tags.filter((t) => t !== tagToRemove));
+    // };
+
+    const handleTagInputChange = (e) => {
+        setInputTag(e.target.value);
+    };
+
+    // const handleKeyPress = (e) => {
+    //     if (e.key === "Enter" || e.key === ",") {
+    //         e.preventDefault();
+    //         handleAddTag(inputTag.trim());
+    //     }
+    // };
+
+    // Add tag (new or from suggestion)
+    const handleAddTag = (tagObj) => {
+        if (
+            tagObj &&
+            !tags.some((t) => t.label.toLowerCase() === tagObj.label.toLowerCase())
+        ) {
+            setTags([...tags, tagObj]);
         }
+        setInputTag("");
     };
 
 
+    const handleRemoveTag = (id) => {
+        setTags(tags.filter((t) => t.id !== id));
+    };
 
-    const handleTagInputChange = (e) => {
-        const value = e.target.value;
-        setInputTag(value);
-
-        // Auto-add tags when comma or space is entered
-        if (value.endsWith(',') || value.endsWith('Enter')) {
-            const tagToAdd = value.slice(0, -1).trim();
-            if (tagToAdd) {
-                // Check for duplicates
-                if (!tags.some(tag => tag.tag_name.toLowerCase() === tagToAdd.toLowerCase())) {
-                    setTags([...tags, { tag_name: tagToAdd }]);
-                }
-                setInputTag("");
+    const handleKeyPress = (e) => {
+        if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
+            if (inputTag.trim()) {
+                handleAddTag({
+                    id: Date.now().toString(),  // generate temp ID
+                    label: inputTag.trim()
+                });
             }
         }
     };
 
-    const handleRemoveTag = (tagToRemove) => {
-        setTags(tags.filter(tag => tag.tag_name !== tagToRemove));
-    };
-
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleAddTag();
-        }
-    };
 
     const resetForm = () => {
         setFile(null);
@@ -156,6 +195,7 @@ const FileUpload = () => {
         }
 
         setLoading(true);
+
 
         const fileData = {
             major_head: majorHead,
@@ -316,11 +356,11 @@ const FileUpload = () => {
                             <p className="text-xs text-gray-500 mb-2">Type tags separated by commas or spaces (they will be added automatically)</p>
                             <div className="flex flex-wrap gap-2">
                                 {tags.map((tag) => (
-                                    <span key={tag.tag_name} className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium">
-                                        {tag.tag_name}
+                                    <span key={tag.id} className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium">
+                                        {tag.label}
                                         <button
                                             type="button"
-                                            onClick={() => handleRemoveTag(tag.tag_name)}
+                                            onClick={() => handleRemoveTag(tag.id)}
                                             className="ml-1 text-purple-600 hover:text-purple-800 font-bold"
                                         >
                                             &times;
@@ -332,7 +372,7 @@ const FileUpload = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2">
                             <input
                                 id="tags"
                                 ref={tagInputRef}
@@ -343,6 +383,29 @@ const FileUpload = () => {
                                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-purple-500 focus:outline-none transition"
                                 placeholder="Type tags (separate with commas or Enter)..."
                             />
+                            {/* Suggested Tags */}
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {suggestedTags
+                                    .filter(
+                                        (s) =>
+                                            !tags.some((t) => t.id === s.id) &&
+                                            s.label?.toLowerCase().includes(inputTag.toLowerCase())
+                                    )
+                                    .slice(0, 25)
+                                    .map((s) => (
+                                        <span key={s.id} className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 px-3 py-1 rounded-full flex items-center text-sm font-medium">
+                                            <button
+
+                                                type="button"
+                                                onClick={() => handleAddTag(s)}
+                                                className="ml-1 text-purple-600 hover:text-purple-800 font-normal"
+                                            >
+                                                {s.label}
+                                            </button>
+                                        </span>
+
+                                    ))}
+                            </div>
                         </div>
                     </div>
 

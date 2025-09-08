@@ -56,7 +56,7 @@ export const documentAPI = {
     return api.post("/searchDocumentEntry", filters);
   },
 
-  addTags: (term = "") => {
+  getAllTags: (term = "") => {
     return api.post("/documentTags", { term });
   },
 
