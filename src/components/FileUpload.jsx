@@ -16,6 +16,7 @@ const FileUpload = () => {
     const [message, setMessage] = useState({ type: "", text: "" });
     const [errors, setErrors] = useState({});
     const tagInputRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const minorHeadOptions = {
         Personal: ["John", "Tom", "Emily", "Sarah", "Michael", "Jessica"],
@@ -67,27 +68,7 @@ const FileUpload = () => {
         }
     };
 
-    // const handleAddTag = () => {
-    //     if (!inputTag.trim()) return;
 
-    //     // Split tags by comma and trim whitespace
-    //     const newTags = inputTag.split(',')
-    //         .map(tag => tag.trim())
-    //         .filter(tag => tag.length > 0)
-    //         .map(tag => ({ tag_name: tag }));
-
-    //     if (newTags.length > 0) {
-    //         // Filter out duplicates
-    //         const uniqueNewTags = newTags.filter(tag =>
-    //             !tags.some(existingTag =>
-    //                 existingTag.tag_name.toLowerCase() === tag.tag_name.toLowerCase()
-    //             )
-    //         );
-
-    //         setTags([...tags, ...uniqueNewTags]);
-    //         setInputTag("");
-    //     }
-    // };
 
     const handleTagInputChange = (e) => {
         const value = e.target.value;
@@ -125,9 +106,8 @@ const FileUpload = () => {
         setTags([]);
         setRemarks("");
         setInputTag("");
-        setMessage({ type: "", text: "" });
         setErrors({});
-        document.querySelector('input[type="file"]').value = "";
+        if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     // Convert file to Base64
@@ -184,17 +164,17 @@ const FileUpload = () => {
             const response = await documentAPI.uploadFile(file, fileData, token);
 
             if (response.data?.success) {
-                setMessage({ type: "success", text: "File uploaded successfully ✅" });
+                setMessage({ type: "success", text: "File uploaded successfully" });
                 resetForm();
             } else {
-                setMessage({ type: "warning", text: "Upload failed, saving locally..." });
+                setMessage({ type: "warning", text: "Document saved locally successfully" });
                 await saveToLocalStorage(file, fileData);
                 // resetForm();
             }
         } catch (error) {
             console.warn("Backend failed, saving to localStorage", error);
             await saveToLocalStorage(file, fileData);
-            setMessage({ type: "success", text: "Document saved locally successfully ✅" });
+            setMessage({ type: "success", text: "Document saved locally successfully" });
             resetForm();
         } finally {
             setLoading(false);
@@ -214,7 +194,7 @@ const FileUpload = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* File Upload */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="file-input" className="block text-sm font-medium text-gray-700">
                             File (Image or PDF only) <span className="text-red-500">*</span>
                         </label>
 
@@ -244,7 +224,10 @@ const FileUpload = () => {
                                     )}
                                 </div>
                                 <input
+                                    ref={fileInputRef}
                                     type="file"
+                                    id="file-input"
+                                    data-testid="file-input"
                                     onChange={handleFileChange}
                                     accept="image/*,.pdf"
                                     className="hidden"
@@ -257,11 +240,13 @@ const FileUpload = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Date */}
                         <div className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="date-picker" className="block text-sm font-medium text-gray-700">
                                 Document Date <span className="text-red-500">*</span>
                             </label>
                             <DatePicker
                                 selected={documentDate}
+                                id="date-picker"
+                                data-testid="date-picker"
                                 onChange={(date) => setDocumentDate(date)}
                                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none transition ${errors.documentDate ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-purple-300 focus:border-purple-500"}`}
                             />
@@ -270,11 +255,13 @@ const FileUpload = () => {
 
                         {/* Category */}
                         <div className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="category-select" className="block text-sm font-medium text-gray-700">
                                 Category <span className="text-red-500">*</span>
                             </label>
                             <select
                                 value={majorHead}
+                                id="category-select"
+                                data-testid="category-select"
                                 onChange={(e) => {
                                     setMajorHead(e.target.value);
                                     setMinorHead("");
@@ -293,10 +280,12 @@ const FileUpload = () => {
                     {/* Subcategory */}
                     {majorHead && (
                         <div className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="subcategory-select" className="block text-sm font-medium text-gray-700">
                                 {majorHead === "Personal" ? "Name" : "Department / Subcategory"} <span className="text-red-500">*</span>
                             </label>
                             <select
+                                id="subcategory-select"
+                                data-testid="subcategory-select"
                                 value={minorHead}
                                 onChange={(e) => setMinorHead(e.target.value)}
                                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none transition ${errors.minorHead ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-purple-300 focus:border-purple-500"}`}
@@ -312,7 +301,7 @@ const FileUpload = () => {
 
                     {/* Tags */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Tags</label>
+                        <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Tags</label>
                         <div className="mb-2">
                             <p className="text-xs text-gray-500 mb-2">Type tags separated by commas or spaces (they will be added automatically)</p>
                             <div className="flex flex-wrap gap-2">
@@ -335,6 +324,7 @@ const FileUpload = () => {
                         </div>
                         <div className="flex gap-2">
                             <input
+                                id="tags"
                                 ref={tagInputRef}
                                 type="text"
                                 value={inputTag}
@@ -348,8 +338,9 @@ const FileUpload = () => {
 
                     {/* Remarks */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Remarks</label>
+                        <label htmlFor="remarks" className="block text-sm font-medium text-gray-700">Remarks</label>
                         <textarea
+                            id="remarks"
                             value={remarks}
                             onChange={(e) => setRemarks(e.target.value)}
                             rows="3"
