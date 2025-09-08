@@ -24,10 +24,18 @@ const FileUpload = () => {
         Company: ["Work Order", "Invoice", "Contracts"],
     };
 
+    // Date Formate
+    const formatDate = (date) => {
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+
     // Input validation
     const validateForm = () => {
         const newErrors = {};
-
         if (!file) newErrors.file = "Please select a file";
         if (!majorHead) newErrors.majorHead = "Category is required";
         if (!minorHead) newErrors.minorHead = "Subcategory is required";
@@ -75,7 +83,7 @@ const FileUpload = () => {
         setInputTag(value);
 
         // Auto-add tags when comma or space is entered
-        if (value.endsWith(',') || value.endsWith(' ')) {
+        if (value.endsWith(',') || value.endsWith('Enter')) {
             const tagToAdd = value.slice(0, -1).trim();
             if (tagToAdd) {
                 // Check for duplicates
@@ -152,7 +160,7 @@ const FileUpload = () => {
         const fileData = {
             major_head: majorHead,
             minor_head: minorHead,
-            document_date: documentDate.toISOString().split("T")[0],
+            document_date: formatDate(documentDate),
             document_remarks: remarks,
             tags,
             user_id: uploadedBy || "admin",
@@ -160,11 +168,12 @@ const FileUpload = () => {
 
         try {
             // Try backend upload first
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("authToken");
             const response = await documentAPI.uploadFile(file, fileData, token);
 
-            if (response.data?.success) {
+            if (response.data?.status) {
                 setMessage({ type: "success", text: "File uploaded successfully" });
+                await saveToLocalStorage(file, fileData);
                 resetForm();
             } else {
                 setMessage({ type: "warning", text: "Document saved locally successfully" });
@@ -245,6 +254,7 @@ const FileUpload = () => {
                             </label>
                             <DatePicker
                                 selected={documentDate}
+                                dateFormat="dd/MM/yyyy"
                                 id="date-picker"
                                 data-testid="date-picker"
                                 onChange={(date) => setDocumentDate(date)}
@@ -331,7 +341,7 @@ const FileUpload = () => {
                                 onChange={handleTagInputChange}
                                 onKeyPress={handleKeyPress}
                                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-purple-500 focus:outline-none transition"
-                                placeholder="Type tags (separate with commas or spaces)..."
+                                placeholder="Type tags (separate with commas or Enter)..."
                             />
                         </div>
                     </div>

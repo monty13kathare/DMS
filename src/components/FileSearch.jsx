@@ -285,6 +285,7 @@ const FileSearch = () => {
                             </label>
                             <DatePicker
                                 selected={filters.from_date}
+                                dateFormat="dd/MM/yyyy"
                                 onChange={date => handleDateChange("from_date", date)}
                                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 placeholderText="Select start date"
@@ -297,6 +298,7 @@ const FileSearch = () => {
                             </label>
                             <DatePicker
                                 selected={filters.to_date}
+                                dateFormat="dd/MM/yyyy"
                                 onChange={date => handleDateChange("to_date", date)}
                                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 placeholderText="Select end date"

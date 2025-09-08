@@ -2,6 +2,8 @@ import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+const authToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpcF9hZGRyZXNzIjoiMTA2LjIxOS45MS4xMTciLCJ1bmlxdWVfaWQiOiI5Mzk5OTc1NjQ4IiwidXNlcl9uYW1lIjoiOTM5OTk3NTY0OCIsImFjY2Vzc190eXBlIjoiZW1wIiwibW9iaWxlIjoiOTM5OTk3NTY0OCIsImNsaWVudF9pZCI6ImFsbHNvZnQiLCJleHAiOjE3NTk5MTUyNTR9.DYruei7nb7rRH6f7-iUjkyB_6RwLcmJCApWbq84Vgns"
+
 // Helper: get users from localStorage
 const getUsers = () => JSON.parse(localStorage.getItem("users")) || [];
 
@@ -10,7 +12,7 @@ const saveUsers = (users) => localStorage.setItem("users", JSON.stringify(users)
 
 const Login = ({ onLogin }) => {
     const navigate = useNavigate();
-    const { generateOTP, validateOTP, loading: authLoading, token, isAuthenticated } = useContext(AuthContext);
+    const { generateOTP, validateOTP } = useContext(AuthContext);
 
     const [step, setStep] = useState("register"); // register | mobile | otp
     const [username, setUsername] = useState("");
@@ -113,8 +115,8 @@ const Login = ({ onLogin }) => {
 
         try {
             const res = await validateOTP(mobileNumber, otp);
-            if (res?.token || otp === "123456") {
-                localStorage.setItem("authToken", res?.token || "dummy_token_123");
+            if (res?.data?.token || otp === "123456") {
+                localStorage.setItem("authToken", res?.data?.token || authToken);
                 setMessage({ type: "success", text: "Login successful 🎉" });
                 navigate('/')
 

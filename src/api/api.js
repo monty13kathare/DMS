@@ -44,7 +44,7 @@ export const documentAPI = {
     formData.append("file", file);
     formData.append("data", JSON.stringify(metadata));
 
-    return api.post("/documentManagement/saveDocumentEntry", formData, {
+    return api.post("/saveDocumentEntry", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         token: token,
